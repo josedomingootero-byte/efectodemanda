@@ -1,0 +1,176 @@
+<style>
+    :root {
+        --primary: #003876;
+        --accent: #f59e0b;
+        --success: #16a34a;
+        --error: #dc2626;
+        --bg: #f8fafc;
+    }
+    #simulador-demanda {
+        font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+        max-width: 850px;
+        height: 520px;
+        margin: auto;
+        border: 2px solid var(--primary);
+        border-radius: 12px;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .header-sim {
+        background: var(--primary);
+        color: white;
+        padding: 15px;
+        text-align: center;
+        margin: 0;
+    }
+    .event-selector {
+        display: flex;
+        background: #e2e8f0;
+        padding: 5px;
+        gap: 5px;
+    }
+    .btn-event {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        background: #cbd5e1;
+        cursor: pointer;
+        font-weight: bold;
+        border-radius: 4px;
+        transition: 0.3s;
+    }
+    .btn-event.active { background: var(--accent); color: white; }
+    
+    .content-area {
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .scenario-box {
+        background: var(--bg);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 5px solid var(--primary);
+    }
+    .options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .btn-opt {
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+    .btn-opt:hover { background: #f1f5f9; }
+    
+    #feedback-area {
+        margin-top: 15px;
+        padding: 15px;
+        border-radius: 6px;
+        display: none;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div id="simulador-demanda">
+    <h3 class="header-sim">Predicción de Efectos: Caso Crédito Colombia</h3>
+    <div class="event-selector">
+        <button class="btn-event active" onclick="loadEvent(1, this)">Evento 1</button>
+        <button class="btn-event" onclick="loadEvent(2, this)">Evento 2</button>
+        <button class="btn-event" onclick="loadEvent(3, this)">Evento 3</button>
+        <button class="btn-event" onclick="loadEvent(4, this)">Evento 4</button>
+    </div>
+
+    <div class="content-area">
+        <div class="scenario-box">
+            <strong id="scen-title">Cargando...</strong>
+            <p id="scen-desc" style="margin-top: 5px; font-size: 0.95rem;"></p>
+        </div>
+
+        <div class="options-grid" id="options-container">
+            </div>
+
+        <div id="feedback-area"></div>
+    </div>
+</div>
+
+<script>
+    const events = {
+        1: {
+            title: "Política Monetaria Expansiva",
+            desc: "El Banco de la República baja las tasas de interés del 13% al 9%.",
+            opts: ["Movimiento sobre la curva: la cantidad demandada aumenta", "Desplazamiento a la derecha", "Desplazamiento a la izquierda", "Ninguno"],
+            correct: 0,
+            just: "<b>Correcto.</b> La tasa de interés es el precio del crédito. Un cambio en el precio genera un <b>movimiento</b> sobre la misma curva, no un desplazamiento. La cantidad demandada sube pero la curva es la misma."
+        },
+        2: {
+            title: "Mejora en el Empleo",
+            desc: "El desempleo en Colombia cae del 12% al 8%, aumentando el ingreso disponible.",
+            opts: ["Movimiento sobre la curva", "Desplazamiento a la derecha de la curva", "Desplazamiento a la izquierda", "Ninguno"],
+            correct: 1,
+            just: "<b>Correcto.</b> El ingreso es un determinante distinto al precio. Un aumento en el ingreso genera un <b>desplazamiento</b> a la derecha: a la misma tasa, ahora se demanda más crédito."
+        },
+        3: {
+            title: "Incertidumbre Política",
+            desc: "Una crisis genera expectativas negativas sobre el futuro económico del país.",
+            opts: ["Movimiento sobre la curva", "Desplazamiento a la derecha", "Desplazamiento a la izquierda de la curva", "Ninguno"],
+            correct: 2,
+            just: "<b>Correcto.</b> Las expectativas negativas reducen la demanda actual. Las familias son cautelosas aunque la tasa no cambie. La curva se <b>desplaza</b> hacia la izquierda."
+        },
+        4: {
+            title: "Inclusión Financiera",
+            desc: "Campaña masiva para bancarizar al 5% de la población aún no incluida.",
+            opts: ["Movimiento sobre la curva", "Desplazamiento a la derecha de la curva", "Desplazamiento a la izquierda", "Ninguno"],
+            correct: 1,
+            just: "<b>Correcto.</b> El número de consumidores es un determinante clave. Más personas en el sistema <b>desplaza</b> la curva hacia la derecha por mayor demanda total a cada nivel de precio."
+        }
+    };
+
+    let currentEvent = 1;
+
+    function loadEvent(num, btn) {
+        currentEvent = num;
+        document.querySelectorAll('.btn-event').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        document.getElementById('scen-title').innerText = events[num].title;
+        document.getElementById('scen-desc').innerText = events[num].desc;
+        document.getElementById('feedback-area').style.display = 'none';
+
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        events[num].opts.forEach((opt, index) => {
+            const b = document.createElement('button');
+            b.className = 'btn-opt';
+            b.innerText = `${String.fromCharCode(65 + index)}) ${opt}`;
+            b.onclick = () => checkAns(index);
+            container.appendChild(b);
+        });
+    }
+
+    function checkAns(index) {
+        const fb = document.getElementById('feedback-area');
+        fb.style.display = 'block';
+        if(index === events[currentEvent].correct) {
+            fb.style.background = "#dcfce7";
+            fb.style.color = "#166534";
+            fb.innerHTML = events[currentEvent].just;
+        } else {
+            fb.style.background = "#fee2e2";
+            fb.style.color = "#991b1b";
+            fb.innerHTML = "<b>Incorrecto.</b> Analiza si el factor que cambió es el PRECIO (Tasa) o un factor externo (Ingreso, expectativas, población).";
+        }
+    }
+
+    // Carga inicial
+    loadEvent(1, document.querySelector('.btn-event'));
+</script>
